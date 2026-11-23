@@ -1,14 +1,18 @@
 # Printed Part Data Pipeline
 
-This repository contains a small synthetic 3D printer data pipeline. It generates extruded 3D letter samples, estimates deposited material, creates a mesh, maps the material to a polar grid, doubles the physical domain, and writes a Cartesian HDF5 file.
+This repository contains a small synthetic 3D printer data pipeline. It generates extruded 3D letter samples, estimates deposited material from the generated CSV, creates a mesh, maps the material to a polar grid, doubles the physical domain, and writes a Cartesian HDF5 file.
 
 ## Requirements
 
-Install the Python dependencies with:
+Install the dependencies used across the full pipeline with:
 
 ```bash
 python3 -m pip install numpy scipy scikit-image h5py matplotlib
 ```
+
+NumPy is used by every stage. `diw.py` uses Matplotlib's text-path tools to
+generate the logos; `engineering.py` uses SciPy and scikit-image to build the
+mesh; and `physics.py` uses SciPy and h5py to write the HDF5 grid.
 
 ## Pipeline
 
@@ -19,20 +23,17 @@ python3 -m pip install numpy scipy scikit-image h5py matplotlib
 The supported logos are `LLNL`, `llnl`, and `Siemens`.
 
 ```bash
-./diw.py PART-001 --logo Siemens -n 1000 -o diw.csv
+./diw.py --part_number PART-001 --logo Siemens --samples 1000 --output diw.csv
 ```
 
 The part number is used to make the generated data repeatable.
 
 ### 2. Estimate deposited material
 
-`diw_post.py` loads the DIW script, resamples the path, and estimates material amount from ink flow and local path spacing.
+`diw_post.py` reads the printer data CSV, resamples the path, and estimates material amount from ink flow and local path spacing. The output sample count is set with `--points`.
 
 ```bash
-./diw_post.py ./diw.py PART-001 2000 \
-  --logo Siemens \
-  --source-samples 1000 \
-  -o polar.csv
+./diw_post.py --input_csv diw.csv --points 2000 --output polar.csv
 ```
 
 The output CSV contains `r`, `theta`, `z`, and `material_amount`.
@@ -42,7 +43,7 @@ The output CSV contains `r`, `theta`, `z`, and `material_amount`.
 `engineering.py` converts polar coordinates to Cartesian coordinates, voxelizes the material field, extracts an isosurface mesh with marching cubes, and stores NumPy arrays, mesh vertices, and triangular faces in an `.npz` archive.
 
 ```bash
-./engineering.py polar.csv -o mesh.npz
+./engineering.py --polar_csv polar.csv --output mesh.npz
 ```
 
 The archive contains `x`, `y`, `z`, `material_amount`, `vertices`, and `faces`.
@@ -52,13 +53,13 @@ The archive contains `x`, `y`, `z`, `material_amount`, `vertices`, and `faces`.
 `physics_pre.py` maps the engineering data to a 3D polar grid and applies a small, repeatable random modification.
 
 ```bash
-./physics_pre.py mesh.npz \
+./physics_pre.py --input_npz mesh.npz \
   --radial 32 \
   --angular 64 \
   --vertical 32 \
   --noise 0.02 \
   --seed 0 \
-  -o polar_grid.npz
+  --output polar_grid.npz
 ```
 
 ### 5. Create the doubled Cartesian HDF5 grid
@@ -66,11 +67,11 @@ The archive contains `x`, `y`, `z`, `material_amount`, `vertices`, and `faces`.
 `physics.py` converts the polar grid to Cartesian coordinates and doubles the physical domain size.
 
 ```bash
-./physics.py polar_grid.npz \
-  --x-points 64 \
-  --y-points 64 \
-  --z-points 32 \
-  -o physics.h5
+./physics.py --polar_grid_npz polar_grid.npz \
+  --x_points 64 \
+  --y_points 64 \
+  --z_points 32 \
+  --output physics.h5
 ```
 
 The HDF5 file contains:

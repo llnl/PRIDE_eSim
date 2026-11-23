@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Generate synthetic 3D-printer samples for an extruded logo.
 
-The public function ``generate_diw_data`` is also used by ``diw_post.py``.
-The CSV columns are x, y, z, and ink_flow.
+The CSV columns are x, y, z, and ink_flow; ``diw_post.py`` consumes this CSV.
 """
 
 from __future__ import annotations
@@ -78,10 +77,10 @@ def write_csv(path: str | Path, data: np.ndarray) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("part_number", help="part identifier used to seed the model")
+    parser.add_argument("--part_number", required=True, help="part identifier used to seed the model")
     parser.add_argument("--logo", choices=("LLNL", "llnl", "Siemens"), default=None)
-    parser.add_argument("-n", "--samples", type=int, default=1000)
-    parser.add_argument("-o", "--output", default="diw.csv")
+    parser.add_argument("--samples", type=int, default=1000)
+    parser.add_argument("--output", default="diw.csv")
     args = parser.parse_args()
     write_csv(args.output, generate_diw_data(args.part_number, args.samples, args.logo))
 

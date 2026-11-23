@@ -65,11 +65,11 @@ def write_cartesian_hdf5(input_npz: str, output: str, x_points: int, y_points: i
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("polar_grid_npz")
-    parser.add_argument("-o", "--output", default="physics.h5")
-    parser.add_argument("--x-points", type=int, default=64)
-    parser.add_argument("--y-points", type=int, default=64)
-    parser.add_argument("--z-points", type=int, default=32)
+    parser.add_argument("--polar_grid_npz", required=True)
+    parser.add_argument("--output", default="physics.h5")
+    parser.add_argument("--x_points", type=int, default=64)
+    parser.add_argument("--y_points", type=int, default=64)
+    parser.add_argument("--z_points", type=int, default=32)
     parser.add_argument("--smoothing", type=float, default=2.0)
     args = parser.parse_args()
     write_cartesian_hdf5(args.polar_grid_npz, args.output, args.x_points, args.y_points,

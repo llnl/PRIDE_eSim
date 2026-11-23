@@ -54,8 +54,8 @@ def make_mesh(x: np.ndarray, y: np.ndarray, z: np.ndarray, amount: np.ndarray,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("polar_csv")
-    parser.add_argument("-o", "--output", default="engineering_arrays.npz")
+    parser.add_argument("--polar_csv", required=True)
+    parser.add_argument("--output", default="engineering_arrays.npz")
     parser.add_argument("--nx", type=int, default=180)
     parser.add_argument("--ny", type=int, default=40)
     parser.add_argument("--nz", type=int, default=24)

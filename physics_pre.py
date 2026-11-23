@@ -60,14 +60,14 @@ def build_polar_grid(input_npz: str, radial: int, angular: int, vertical: int,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("input_npz")
-    parser.add_argument("-o", "--output", default="polar_grid.npz")
+    parser.add_argument("--input_npz", required=True)
+    parser.add_argument("--output", default="polar_grid.npz")
     parser.add_argument("--radial", type=int, default=32)
     parser.add_argument("--angular", type=int, default=64)
     parser.add_argument("--vertical", type=int, default=32)
     parser.add_argument("--noise", type=float, default=0.02)
     parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--support-radius", type=float, default=0.18,
+    parser.add_argument("--support_radius", type=float, default=0.18,
                         help="normalized distance around printer samples that contains material")
     args = parser.parse_args()
     result = build_polar_grid(args.input_npz, args.radial, args.angular, args.vertical,
