@@ -1,59 +1,64 @@
-# Printed Part Data Pipeline
+# PRIDE eSim
 
-This repository contains a small synthetic 3D printer data pipeline. It generates extruded 3D letter samples, estimates deposited material from the generated CSV, creates a mesh, maps the material to a polar grid, doubles the physical domain, and writes a Cartesian HDF5 file.
+PRIDE eSim is a Python package for generating synthetic 3D printer samples and
+converting them into engineering meshes, polar grids, and Cartesian HDF5 data.
+It installs five command-line executables, one for each pipeline stage.
 
-## Requirements
+## Install
 
-Install the dependencies used across the full pipeline with:
+Install the package and its runtime dependencies from this checkout:
 
 ```bash
-python3 -m pip install numpy scipy scikit-image h5py matplotlib
+python3 -m pip install .
 ```
 
-NumPy is used by every stage. `diw.py` uses Matplotlib's text-path tools to
-generate the logos; `engineering.py` uses SciPy and scikit-image to build the
-mesh; and `physics.py` uses SciPy and h5py to write the HDF5 grid.
+The package requires Python 3.10 or newer. Its dependencies are NumPy, SciPy,
+scikit-image, h5py, and Matplotlib. NumPy is used throughout; Matplotlib's
+text-path tools generate the logos; SciPy and scikit-image build the mesh; and
+SciPy and h5py create the final HDF5 grid.
 
 ## Pipeline
 
+Run the commands below in order. Each executable accepts `--help` for its full
+set of options.
+
 ### 1. Generate printer data
 
-`diw.py` generates printer path data with the columns `x`, `y`, `z`, and `ink_flow`.
-
-The supported logos are `LLNL`, `llnl`, and `Siemens`.
+`pride-esim-diw` writes a CSV with `x`, `y`, `z`, and `ink_flow` columns. The
+part number makes generated data repeatable. Supported logos are `LLNL`,
+`llnl`, and `Siemens`.
 
 ```bash
-./diw.py --part_number PART-001 --logo Siemens --samples 1000 --output diw.csv
+pride-esim-diw --part_number PART-001 --logo Siemens --samples 1000 --output diw.csv
 ```
-
-The part number is used to make the generated data repeatable.
 
 ### 2. Estimate deposited material
 
-`diw_post.py` reads the printer data CSV, resamples the path, and estimates material amount from ink flow and local path spacing. The output sample count is set with `--points`.
+`pride-esim-diw-post` reads the printer-data CSV, resamples the path, and
+estimates material amount from ink flow and local path spacing. The output CSV
+contains `r`, `theta`, `z`, and `material_amount` columns.
 
 ```bash
-./diw_post.py --input_csv diw.csv --points 2000 --output polar.csv
+pride-esim-diw-post --input_csv diw.csv --points 2000 --output polar.csv
 ```
-
-The output CSV contains `r`, `theta`, `z`, and `material_amount`.
 
 ### 3. Create the engineering mesh
 
-`engineering.py` converts polar coordinates to Cartesian coordinates, voxelizes the material field, extracts an isosurface mesh with marching cubes, and stores NumPy arrays, mesh vertices, and triangular faces in an `.npz` archive.
+`pride-esim-engineering` converts polar coordinates to Cartesian coordinates,
+voxelizes the material field, extracts an isosurface mesh, and saves the arrays,
+mesh vertices, and triangular faces in an `.npz` archive.
 
 ```bash
-./engineering.py --polar_csv polar.csv --output mesh.npz
+pride-esim-engineering --polar_csv polar.csv --output mesh.npz
 ```
-
-The archive contains `x`, `y`, `z`, `material_amount`, `vertices`, and `faces`.
 
 ### 4. Build the polar physics grid
 
-`physics_pre.py` maps the engineering data to a 3D polar grid and applies a small, repeatable random modification.
+`pride-esim-physics-pre` maps the engineering data to a 3D polar grid and
+applies a repeatable random modification.
 
 ```bash
-./physics_pre.py --input_npz mesh.npz \
+pride-esim-physics-pre --input_npz mesh.npz \
   --radial 32 \
   --angular 64 \
   --vertical 32 \
@@ -62,30 +67,25 @@ The archive contains `x`, `y`, `z`, `material_amount`, `vertices`, and `faces`.
   --output polar_grid.npz
 ```
 
-### 5. Create the doubled Cartesian HDF5 grid
+### 5. Create the Cartesian HDF5 grid
 
-`physics.py` converts the polar grid to Cartesian coordinates and doubles the physical domain size.
+`pride-esim-physics` converts the polar grid to Cartesian coordinates and
+doubles the physical scale of the part.
 
 ```bash
-./physics.py --polar_grid_npz polar_grid.npz \
+pride-esim-physics --polar_grid_npz polar_grid.npz \
   --x_points 64 \
   --y_points 64 \
   --z_points 32 \
   --output physics.h5
 ```
 
-The HDF5 file contains:
+The HDF5 file contains one-dimensional `x`, `y`, and `z` coordinate axes, a
+three-dimensional `density` field, and the `grid_type` and `scale_factor`
+attributes.
 
-- `x`, `y`, `z`: one-dimensional Cartesian coordinate axes
-- `density`: three-dimensional material amount field
-- `grid_type`: `cartesian`
-- `scale_factor`: `2.0`
+## License
 
-## Release
-
-The code of this site is released under the MIT License. For more details, see the [LICENSE](LICENSE) File.
-
-LLNL-CODE-2027063
-
-SPDX-License-Identifier: MIT
+The package is distributed under the MIT License. See [LICENSE](LICENSE) and
+[NOTICE](NOTICE) for details. LLNL code release identifier: LLNL-CODE-2027063.
 
